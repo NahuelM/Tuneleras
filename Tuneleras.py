@@ -23,7 +23,7 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, {
         'href': '../static/styles.css',
         'rel': 'stylesheet'
 }, dbc.icons.BOOTSTRAP], title='Tuneleras')
-
+server = app.server
 def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina):
     app.server.my_variable = 'Initial value'
     app.server.danger_type = ''
