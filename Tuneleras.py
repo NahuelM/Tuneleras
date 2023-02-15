@@ -28,43 +28,50 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     app.server.my_variable = 'Initial value'
     app.server.danger_type = ''
     #region Querys
-    connectPG = psycopg2.connect("dbname=PGSEPS user=postgres password=eps host=10.60.0.245")            
-    cursorPG = connectPG.cursor()
+    #connectPG = psycopg2.connect("dbname=PGSEPS user=postgres password=eps host=10.60.0.245")            
+    #cursorPG = connectPG.cursor()
     #idTramo = "100"
     # datos del tramo
-    cursorPG.execute("""SELECT tipotra, tiposec, GREATEST(dim1,dim2), LEAST(dim1,dim2), zarriba, zabajo, longitud FROM public."SS_Tramos"
-                        WHERE CAST(id AS character varying) = '%s';""", (AsIs(id_tramo),))
+    #cursorPG.execute("""SELECT tipotra, tiposec, GREATEST(dim1,dim2), LEAST(dim1,dim2), zarriba, zabajo, longitud FROM public."SS_Tramos"
+     #                   WHERE CAST(id AS character varying) = '%s';""", (AsIs(id_tramo),))
                         
-    datos = cursorPG.fetchall()
+    #datos = cursorPG.fetchall()
     #print(datos)
     # cota de terreno (punto inicial)
-    cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = (SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
-    cota_inicial = cursorPG.fetchall()
+    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = (SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
+    #cota_inicial = cursorPG.fetchall()
     #print("cotaInicical: " + str(cotaInicial))
-    cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = (SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
-    existe1 = cursorPG.fetchone()
+    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = (SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
+    #existe1 = cursorPG.fetchone()
     #print("existe1: " + str(existe1))
 
 
     # punto final
-    cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
-                    (SELECT CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
-    cota_final = cursorPG.fetchall()
+    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
+    #                (SELECT CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
+    #cota_final = cursorPG.fetchall()
    # print("cotaFinal: " + str(cotaFinal))
     # punto final
-    cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
-                    (SELECT CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
-    existe2 = cursorPG.fetchone()
+    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
+    #                (SELECT CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
+    #existe2 = cursorPG.fetchone()
     
-    cursorPG.execute("""SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom, 1)))) AS numeric), CAST((SELECT ST_Y(ST_StartPoint(ST_GeometryN(t.geom, 1)))) AS numeric),
-                        CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom, 1)))) AS numeric), CAST((SELECT ST_Y(ST_EndPoint(ST_GeometryN(t.geom, 1)))) AS numeric)
-                        FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s';""", (AsIs(id_tramo),))
+    #cursorPG.execute("""SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom, 1)))) AS numeric), CAST((SELECT ST_Y(ST_StartPoint(ST_GeometryN(t.geom, 1)))) AS numeric),
+    #                    CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom, 1)))) AS numeric), CAST((SELECT ST_Y(ST_EndPoint(ST_GeometryN(t.geom, 1)))) AS numeric)
+   #                     FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s';""", (AsIs(id_tramo),))
     # [0] X de startPoint, [1] Y de startPoint, [2] endPoint, [3] endPoint
-    coords_puntos_tapas = cursorPG.fetchone()
-
+    #coords_puntos_tapas = cursorPG.fetchone()
+    
     #endregion
-    
-    
+    coords_puntos_tapas = [0,1,2,3]
+    id_aux = int(id_tramo) % 3
+    csv_data = pd.read_csv('Datos.csv', delimiter= ',')
+    datos_CSV = csv_data.iloc[id_aux][0:7]
+    datos = [datos_CSV]
+    cota_inicial_CSV = csv_data.iloc[id_aux][7:9]
+    cota_final_CSV = csv_data.iloc[id_aux][9:11]
+    cota_inicial = [cota_inicial_CSV]
+    cota_final = [cota_final_CSV]
 
     distancia_inicial = [[0]]
     distancia_final = [[0]]
@@ -87,11 +94,11 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     
     
     
-    if (existe1 == None or existe2 == None):
-        print('Error al mostrar perfil: Datos de terreno incoherentes.')
-    else:
-        punto_inicial = cota_inicial[0][1]
-        punto_final = cota_final[0][1]
+    #if (existe1 == None or existe2 == None):
+    #    print('Error al mostrar perfil: Datos de terreno incoherentes.')
+    #else:
+    #    punto_inicial = cota_inicial[0][1]
+     #   punto_final = cota_final[0][1]
 
     #     if (id_esquina != 0 ):
     #         cursorPG.execute("""SELECT ST_Distance(ST_GeometryN(t.geom,1),ST_GeometryN(p.geom,1)) from "SS_Puntos" p join "Cruces_Calles" t on cast(p.id as character varying) = '%s'
