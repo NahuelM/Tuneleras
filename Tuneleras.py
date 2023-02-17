@@ -24,6 +24,10 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, {
         'rel': 'stylesheet'
 }, dbc.icons.BOOTSTRAP], title='Tuneleras')
 server = app.server
+
+
+csv_data_tramos = pd.read_csv('Datos.csv', delimiter = ',')
+
 def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina):
     app.server.my_variable = 'Initial value'
     app.server.danger_type = ''
