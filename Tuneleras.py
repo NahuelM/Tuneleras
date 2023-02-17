@@ -63,15 +63,15 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     #coords_puntos_tapas = cursorPG.fetchone()
     
     #endregion
-    coords_puntos_tapas = [0,1,2,3]
-    id_aux = int(id_tramo) % 3
-    csv_data = pd.read_csv('Datos.csv', delimiter= ',')
-    datos_CSV = csv_data.iloc[id_aux][0:7]
+    datos_CSV = csv_data_tramos.iloc[int(id_tramo)][1:8]
     datos = [datos_CSV]
-    cota_inicial_CSV = csv_data.iloc[id_aux][7:9]
-    cota_final_CSV = csv_data.iloc[id_aux][9:11]
+    
+    cota_inicial_CSV = csv_data_tramos.iloc[int(id_tramo)][8:10]
+    cota_final_CSV = csv_data_tramos.iloc[int(id_tramo)][10:12]
     cota_inicial = [cota_inicial_CSV]
     cota_final = [cota_final_CSV]
+    coords_puntos_tapas = csv_data_tramos.iloc[int(id_tramo)][12:16]
+    
 
     distancia_inicial = [[0]]
     distancia_final = [[0]]
@@ -599,7 +599,8 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
                                    mode = 'lines+markers+text',
                                    line = dict(color='blue', width=5),
                                    text = ['AA', 'aa'],
-                                   textposition = 'top center')
+                                   textposition = 'top center',
+                                   marker = dict(size = 3))
 
     fig = go.Figure(data = [punto_fantasma, punto_fantasma, caras_lados_cilindro_redzone[0], caras_lados_cilindro_colector[0], caras_lados_cilindro_colector1[0], crear_cube_mesh3d(puntos_plano_terreno, 'rgba(150, 150, 163, 1)', 1, 'Superficie', .18), crear_plano_mesh3d(puntos_plano_terreno, 'rgb(128, 128, 138)', 1, '', .183),
                             frente_colector, direccion_agua_arrow,
@@ -828,9 +829,11 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
         fig['layout']['yaxis'].update(autorange = True)
         return fig
 
-    datos_to_tabla = [[cota_inicial[0][0], zarriba, datos[0][2], 1, coords_puntos_tapas[0], coords_puntos_tapas[1], cota_inicial[0][1]],
-                      [cota_final[0][0], zabajo, datos[0][3], 1, coords_puntos_tapas[2], coords_puntos_tapas[3], cota_final[0][1]],
+
+    datos_to_tabla = [[cota_inicial[0][0], zarriba, datos[0][2], 1, coords_puntos_tapas[2], coords_puntos_tapas[3], cota_inicial[0][1]],
+                      [cota_final[0][0], zabajo, datos[0][3], 1, coords_puntos_tapas[0], coords_puntos_tapas[1], cota_final[0][1]],
                       [xf, datos[0][0], datos[0][1]]]
+
 
     return [fig, crear2D(), datos_to_tabla]
 
