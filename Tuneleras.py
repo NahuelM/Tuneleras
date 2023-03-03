@@ -25,7 +25,7 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, {
         'href': '../static/styles.css',
         'rel': 'stylesheet'
 }, dbc.icons.BOOTSTRAP], title='Tuneleras')
-
+server = app.server
 
 csv_data_tramos = pd.read_csv('Datos.csv', delimiter = ',')
 us_cities  =  pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/us-cities-top-1k.csv")
