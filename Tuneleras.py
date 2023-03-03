@@ -1,7 +1,7 @@
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pyproj
-import plotly.express as px
+
 
 import dash
 import dash_bootstrap_components as dbc
