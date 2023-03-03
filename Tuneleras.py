@@ -271,45 +271,6 @@ def make_map(tramos_csv, id):
 def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina):
     app.server.my_variable = 'Initial value'
     app.server.danger_type = ''
-    #region Querys
-    #connectPG = psycopg2.connect("dbname=PGSEPS user=postgres password=eps host=10.60.0.245")            
-    #cursorPG = connectPG.cursor()
-
-    # datos del tramo
-    #cursorPG.execute("""SELECT tipotra, tiposec, GREATEST(dim1,dim2), LEAST(dim1,dim2), zarriba, zabajo, longitud FROM public."SS_Tramos"
-    #                    WHERE CAST(id AS character varying) = '%s';""", (AsIs(id_tramo),))
-                        
-    #datos = cursorPG.fetchall()
-    #print(datos)
-    # cota de terreno (punto inicial)
-    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
-    #                 (SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
-    #cota_inicial = cursorPG.fetchall()
-    #print("cotaInicical: " + str(cotaInicial))
-    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = (SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
-   # existe1 = cursorPG.fetchone()
-    #print("existe1: " + str(existe1))
-
-
-    # punto final
-    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
-    #                (SELECT CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
-    #cota_final = cursorPG.fetchall()
-   # print("cotaFinal: " + str(cotaFinal))
-    # punto final
-    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
-    #                (SELECT CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
-    #existe2 = cursorPG.fetchone()
-    
-    #cursorPG.execute("""SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom, 1)))) AS numeric), CAST((SELECT ST_Y(ST_StartPoint(ST_GeometryN(t.geom, 1)))) AS numeric),
-    #                   CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom, 1)))) AS numeric), CAST((SELECT ST_Y(ST_EndPoint(ST_GeometryN(t.geom, 1)))) AS numeric)
-    #                    FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s';""", (AsIs(id_tramo),))
-    #[0] X de startPoint, [1] Y de startPoint, [2] endPoint, [3] endPoint
-    #coords_puntos_tapas = cursorPG.fetchone()
-    
-    #endregion
-    
-
 
     datos_CSV = csv_data_tramos.iloc[int(id_tramo)][1:8]
     datos = [datos_CSV]
@@ -335,33 +296,6 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
         fig = go.Figure(data=[])
         app.server.my_variable = 'Danger!!'
 
-
-
-        
-
-    # if (existe1 == None or existe2 == None):
-    #     print('Error al mostrar perfil: Datos de terreno incoherentes.')
-    # else:
-    #     punto_inicial = cota_inicial[0][1]
-    #     punto_final = cota_final[0][1]
-
-    #     if (id_esquina != 0 ):
-    #         cursorPG.execute("""SELECT ST_Distance(ST_GeometryN(t.geom,1),ST_GeometryN(p.geom,1)) from "SS_Puntos" p join "Cruces_Calles" t on cast(p.id as character varying) = '%s'
-    #                         and cast(t.id as character varying) = '%s';""",
-    #                         (AsIs(punto_inicial), AsIs(id_esquina)))
-    #         distancia_inicial = cursorPG.fetchall()
-            
-
-    #         cursorPG.execute("""SELECT ST_Distance(ST_GeometryN(t.geom,1),ST_GeometryN(p.geom,1)) from "SS_Puntos" p join "Cruces_Calles" t on cast(p.id as character varying) = '%s'
-    #                         and cast(t.id as character varying) = '%s';""",
-    #                         (AsIs(punto_final), AsIs(id_esquina)))
-    #         distancia_final = cursorPG.fetchall()
-    #         #print(str(distanciaFinal))
-    #         #print(str(distanciaInicial))
-    #         if (distancia_final == None or distancia_inicial == None):
-    #             print('Error al mostrar perfil: Datos de esquina incoherentes.')
-        
-    #     connectPG.commit()
     diam = float(datos[0][2])
     zabajo = float(datos[0][5])
     zarriba = float(datos[0][4])
@@ -602,7 +536,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
             l += 1
         return no_intersecta
     
-    #framesAnim = [go.Frame(data=[go.Scatter3d(x = [xDisEsquina], y = [yFrames[k]], z = [profundidadReltaiva], mode = 'markers', marker=dict(color="green", size=10))]) for k in range(cantFrames)]
+    
     frames_anim = []
     
     
@@ -748,9 +682,6 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     if(profundidad_tunelera > 0):
         anotaciones.append(anotacion_tunelera)
         
-    # if(anotacion_error != None):
-    #     time.sleep(2)
-    #     anotaciones.append(anotacion_error)
     fig.update_xaxes(layer = 'below traces')
     fig.update_yaxes(layer = 'below traces')
 
@@ -1123,7 +1054,7 @@ def update_figure(selected_ID, diametro_tunelera, profundidad_tunelera, dis_esqu
     return fig[0], fig[1], tabla_res, _map, None
 
 if __name__ == '__main__':
-    app.run_server(debug = True, port='8080')
+    app.run_server(debug = False, port='8080')
 
 #endregion
 
