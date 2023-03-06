@@ -314,6 +314,8 @@ def make_map(tramos_csv, id, dis_esq):
 def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina):
     app.server.my_variable = 'Initial value'
     app.server.danger_type = ''
+    
+
 
     datos_CSV = csv_data_tramos.iloc[int(id_tramo)][1:8]
     datos = [datos_CSV]
@@ -338,6 +340,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     elif cota_final[0][0] == 0:
         fig = go.Figure(data=[])
         app.server.my_variable = 'Danger!!'
+
 
     diam = float(datos[0][2])
     zabajo = float(datos[0][5])
@@ -552,8 +555,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     
     profundidad_reltaiva = recta_terreno(x_dis_esquina) - (profundidad_tunelera + diametro_tunelera/2)
     
-    print(str(recta_terreno(x_dis_esquina)))
-    print(str(recta_terreno(x_dis_esquina) - (profundidad_tunelera + diametro_tunelera/2)))
+
 
     cilindro_temporal_interseccion = crear_cilindro_mesh3d(recta(x_dis_esquina + diametro_tunelera/2), 0,  -(x_dis_esquina + diametro_tunelera/2), recta(x_dis_esquina - diametro_tunelera/2), 0,  -(x_dis_esquina - diametro_tunelera/2), radio_circ_temporal1, radio_circ_temporal2, 'orange', 1, 'temporal', 'y', math.pi / 2, 'name', False, cota_final = cota_final, cota_inicial = cota_inicial, n = n)
     Z_cota = np.concatenate((cilindro_temporal_interseccion[1][2], cilindro_temporal_interseccion[2][2])) #concatenacion de arrays con las coordenadas en Z de las circunferencias que forman el cildro
@@ -579,7 +581,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
             l += 1
         return no_intersecta
     
-    
+    #framesAnim = [go.Frame(data=[go.Scatter3d(x = [xDisEsquina], y = [yFrames[k]], z = [profundidadReltaiva], mode = 'markers', marker=dict(color="green", size=10))]) for k in range(cantFrames)]
     frames_anim = []
     
     
@@ -725,6 +727,9 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     if(profundidad_tunelera > 0):
         anotaciones.append(anotacion_tunelera)
         
+    # if(anotacion_error != None):
+    #     time.sleep(2)
+    #     anotaciones.append(anotacion_error)
     fig.update_xaxes(layer = 'below traces')
     fig.update_yaxes(layer = 'below traces')
 
@@ -1009,7 +1014,7 @@ graph_card = dbc.Card(
                 html.Div([
                 dcc.Graph(figure = init_graph[0], id = 'graph3D'),
                 dcc.Graph(figure = init_graph[1], id = 'graph2D'),
-                dcc.Graph(figure = make_map(csv_data_tramos, 1), id = '_map'),
+                dcc.Graph(figure = make_map(csv_data_tramos, 1, 0), id = '_map'),
                 dbc.CardBody(
                     [
                         html.H6('DATOS'),
@@ -1044,7 +1049,7 @@ app.layout = html.Div([
 )
 def update_figure(selected_ID, diametro_tunelera, profundidad_tunelera, dis_esquina, n_clicks):
     fig = create_graph(selected_ID, float(diametro_tunelera), float(profundidad_tunelera), float(dis_esquina))
-    _map = make_map(csv_data_tramos, selected_ID)
+    _map = make_map(csv_data_tramos, selected_ID, dis_esquina)
     
     if  (app.server.my_variable != 'Danger!!'):
         fig[0].update_layout(transition_duration = 500)
@@ -1097,7 +1102,7 @@ def update_figure(selected_ID, diametro_tunelera, profundidad_tunelera, dis_esqu
     return fig[0], fig[1], tabla_res, _map, None
 
 if __name__ == '__main__':
-    app.run_server(debug = False, port='8080')
+    app.run_server(debug = True, port='8080')
 
 #endregion
 
