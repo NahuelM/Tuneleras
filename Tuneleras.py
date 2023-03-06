@@ -179,7 +179,7 @@ def crear_cilindro_mesh3d(Xcoord_C1, Ycoord_C1, ZCoord_C1, Xcoord_C2, Ycoord_C2,
         # Crear una malla de la caras laterales del cilindro
         return [go.Mesh3d(x = xcy1, y = ycy1, z = zcy1, i = ViCy1, j = VjCy1, k = VkCy1, color = color, opacity = opacity, flatshading = True, intensitymode = 'cell', hovertemplate=info, name = name), [x_rc1, y_rc1, z_rc1], [x_rc2, y_rc2, z_rc2]]
 
-def make_map(tramos_csv, id):
+def make_map(tramos_csv, id, dis_esq):
     datos_CSV = tramos_csv.iloc[int(id)][0:16]
     datos = [datos_CSV]
     x = float(datos[0][12])
@@ -236,24 +236,67 @@ def make_map(tramos_csv, id):
         ),
         text = text_data,
         textposition = 'bottom center',
-        hoverinfo = 'text'
+        hoverinfo = 'text',
+        hovertext = hover_data
     )
     
+    x1 = float(datos[0][12])
+    y1 = float(datos[0][13])
+    x2 = float(datos[0][14])
+    y2 = float(datos[0][15])
+    pendiente = (y2 - y1) / (x2 - x1) 
+
+    def recta_tramo(X) -> float:  
+        """ recta que une los dos puntos del tramo"""
+        return  pendiente * X - (pendiente*x1) + y1
+    
+
+    #(x1, y1) aa
+    #(x2, y2) AA
+
+    angle = (math.atan(pendiente))
+    hipotenusa_dis = float(dis_esq)
+    dis_cateto_adj = round(math.cos(angle) * hipotenusa_dis, 2)
+    a = math.pow(x2 - (x2+dis_cateto_adj), 2)
+    b = math.pow(recta_tramo(x2) - recta_tramo(x2+dis_cateto_adj), 2)
+    
+    print('dis: ' + str(math.sqrt(a + b)))
+    
+    def recta_tun(X) -> float:  
+        """ recta que une los dos puntos del tramo"""
+        x_1 = x2 + dis_cateto_adj
+        y_1 = recta_tramo(x2 + dis_cateto_adj)
+        return  -1/pendiente * X - (-1/pendiente*x_1) + y_1
+    
+    lat_pt_tramo1, lon_pt_tramo1 = transformer.transform(x2 + dis_cateto_adj, recta_tramo(x2 + dis_cateto_adj))
+    lat_pt_tramo2, lon_pt_tramo2 = transformer.transform(x2 + dis_cateto_adj - 4, recta_tun(x2 + dis_cateto_adj - 4))
+    lat_pt_tramo3, lon_pt_tramo3 = transformer.transform(x2 + dis_cateto_adj + 4, recta_tun(x2 + dis_cateto_adj + 4))
     map_tunelera = go.Scattermapbox(
-        lat = lat_array,
-        lon = lon_array,
+        lat = [lat_pt_tramo1, lat_pt_tramo2, lat_pt_tramo3],
+        lon = [lon_pt_tramo1, lon_pt_tramo2, lon_pt_tramo3],
         mode = 'lines+text+markers',
         marker = go.scattermapbox.Marker(
-            size = 9,
+            size = 4,
             color = 'rgba(10, 70, 80, 1)',
             
         ),
-        text = text_data,
-        textposition = 'bottom center',
-        hoverinfo = 'text'
+        text = ['', '', 'Tunelera']
                         
     )
-    fig = go.Figure(data = [map_tramo, map_tunelera])
+    
+    map_dis = go.Scattermapbox(
+        lat = [lat_pt_tramo1, (lat_pt_tramo1 + float(lat_array[1]))/2, lat_array[1]],
+        lon = [lon_pt_tramo1, (lon_pt_tramo1 + float(lon_array[1]))/2, lon_array[1]],
+        mode = 'lines+text',
+        marker = go.scattermapbox.Marker(
+            size = 3,
+            color = 'rgba(20,20,20,1)'
+            
+        ),
+        text = ['', 'dis: ' + str(round(math.sqrt(a + b), 1)) + 'm', '']
+    )
+    
+    fig = go.Figure(data = [map_tramo, map_tunelera, map_dis])
     fig.update_layout(
         mapbox = dict(
             accesstoken='pk.eyJ1IjoibmFodWVsMDAwIiwiYSI6ImNsZW11MGQ2YjAweXUzcnIxaHp4MTF2NGgifQ.aLPRn5aR6GNJ3QDIKbhFeg',
