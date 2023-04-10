@@ -253,15 +253,16 @@ def make_map(tramos_csv, id, dis_esq):
 
     #(x1, y1) aa
     #(x2, y2) AA
+    AA_in_der_aux = -1
+    if(x1 >= x2):
+        AA_in_der_aux = 1
 
     angle = (math.atan(pendiente))
-    hipotenusa_dis = float(dis_esq)
-    dis_cateto_adj = round(math.cos(angle) * hipotenusa_dis, 2)
+    hipotenusa_dis = float(dis_esq) 
+    dis_cateto_adj = AA_in_der_aux * round(math.cos(angle) * hipotenusa_dis, 2)  #si AA esta a la derecha de aa sino *-1
     a = math.pow(x2 - (x2+dis_cateto_adj), 2)
     b = math.pow(recta_tramo(x2) - recta_tramo(x2+dis_cateto_adj), 2)
-    
-    print('dis: ' + str(math.sqrt(a + b)))
-    
+        
     def recta_tun(X) -> float:  
         """ recta que une los dos puntos del tramo"""
         x_1 = x2 + dis_cateto_adj
@@ -271,6 +272,7 @@ def make_map(tramos_csv, id, dis_esq):
     lat_pt_tramo1, lon_pt_tramo1 = transformer.transform(x2 + dis_cateto_adj, recta_tramo(x2 + dis_cateto_adj))
     lat_pt_tramo2, lon_pt_tramo2 = transformer.transform(x2 + dis_cateto_adj - 4, recta_tun(x2 + dis_cateto_adj - 4))
     lat_pt_tramo3, lon_pt_tramo3 = transformer.transform(x2 + dis_cateto_adj + 4, recta_tun(x2 + dis_cateto_adj + 4))
+    
     map_tunelera = go.Scattermapbox(
         lat = [lat_pt_tramo1, lat_pt_tramo2, lat_pt_tramo3],
         lon = [lon_pt_tramo1, lon_pt_tramo2, lon_pt_tramo3],
