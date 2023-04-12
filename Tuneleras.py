@@ -555,7 +555,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     radio_circ_temporal1 = (recta1(x_dis_esquina + diametro_tunelera/2)) - (recta(x_dis_esquina + diametro_tunelera/2))
     radio_circ_temporal2 = (recta1(x_dis_esquina - diametro_tunelera/2)) - (recta(x_dis_esquina - diametro_tunelera/2))
     
-    profundidad_reltaiva = recta_terreno(x_dis_esquina) - (profundidad_tunelera + diametro_tunelera/2)
+    profundidad_reltaiva = recta_terreno(x_dis_esquina) - (profundidad_tunelera)
     
 
 
