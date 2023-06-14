@@ -28,7 +28,7 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, {
 server = app.server
 
 csv_data_tramos = pd.read_csv('Datos.csv', delimiter = ',')
-us_cities  =  pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/us-cities-top-1k.csv")
+
 
 def rotate_xMatriz(angle):
         """" Devuelve la matriz de rotacion que rota `angle` en el eje `x` """
@@ -179,6 +179,69 @@ def crear_cilindro_mesh3d(Xcoord_C1, Ycoord_C1, ZCoord_C1, Xcoord_C2, Ycoord_C2,
         # Crear una malla de la caras laterales del cilindro
         return [go.Mesh3d(x = xcy1, y = ycy1, z = zcy1, i = ViCy1, j = VjCy1, k = VkCy1, color = color, opacity = opacity, flatshading = True, intensitymode = 'cell', hovertemplate=info, name = name), [x_rc1, y_rc1, z_rc1], [x_rc2, y_rc2, z_rc2]]
 
+def make_map_2(tramos_csv, id):
+    transformer = pyproj.Transformer.from_crs("EPSG:32721", "EPSG:4326")
+
+
+    coords_puntos =  tramos_csv.iloc[int(id)][16]
+    array_puntos = str(coords_puntos).split(",")
+    array_maps = []
+    center_lat = 0
+    center_lon = 0
+    len_array_puntos = len(array_puntos)
+    lat_array = []
+    lon_array = []
+    hover_data = []
+    array_puntos.sort()
+    for i in range(0, len_array_puntos):
+        array_aux = array_puntos[i].split(" ")
+        x = float(array_aux[1].split("(")[1])
+        y = float(array_aux[2])
+        
+        lat, lon = transformer.transform(x, y)
+        lat_array.append(str(lat))
+        lon_array.append(str(lon))
+        
+
+        center_lat += lat
+        center_lon += lon
+        hover_data.append(str(i))
+    
+    map_tramo = go.Scattermapbox(
+        lat=lat_array,
+        lon=lon_array,
+        mode = 'lines+markers',
+        marker = go.scattermapbox.Marker(
+            size = 9,
+            color = 'rgba(200, 30, 100, 1)',
+            
+        ),
+        textposition = 'bottom center',
+        hoverinfo = 'text',
+        hovertext = hover_data
+    )
+    map_aux = go.Scattermapbox(
+        lat=[lat_array[0], lat_array[len(lat_array)-1]],
+        lon=[lon_array[0], lon_array[len(lon_array)-1]],
+        mode='lines'
+    )
+    array_maps.append(map_tramo)
+    fig = go.Figure(data = array_maps)
+    fig.update_layout(
+        mapbox = dict(
+            accesstoken='pk.eyJ1IjoibmFodWVsMDAwIiwiYSI6ImNsZW11MGQ2YjAweXUzcnIxaHp4MTF2NGgifQ.aLPRn5aR6GNJ3QDIKbhFeg',
+            style = 'light', 
+            center = go.layout.mapbox.Center(
+                lat = center_lat/len_array_puntos,
+                lon = center_lon/len_array_puntos
+            ),
+            zoom = 18
+        ),
+        margin = {"r":0,"t":1,"l":0,"b":0}
+    )
+    return fig
+    
+
 def make_map(tramos_csv, id, dis_esq):
     datos_CSV = tramos_csv.iloc[int(id)][0:16]
     datos = [datos_CSV]
@@ -225,6 +288,11 @@ def make_map(tramos_csv, id, dis_esq):
     if(datos[0][6] == 'IMP'):
         text_data = ['AA', 'aa']
 
+
+    #rgb(255, 0, 0) Separativo
+    #rgb(0,255,0) pluvial
+    #rgb(207, 52, 118) mixto
+    #rgb(140, 0, 250) Unitario
     map_tramo = go.Scattermapbox(
         lat = lat_array,
         lon = lon_array,
@@ -313,9 +381,58 @@ def make_map(tramos_csv, id, dis_esq):
     )
     return fig
 
+def distancia_punto_a_recta(A, B, C, P):
+    #formula de distancioa de punto a recta
+    return abs(A*P[0]+B*P[1]+C)/(math.sqrt(A*A+B*B))
+
+def distancia_entre_puntos(A, B):
+    acum = 0
+    for i in range(0, len(A)):
+        acum += math.pow((B[i] - A[i]), 2)
+        
+    return math.sqrt(acum)
+
 def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina):
     app.server.my_variable = 'Initial value'
     app.server.danger_type = ''
+    #region Querys
+    #connectPG = psycopg2.connect("dbname=PGSEPS user=postgres password=eps host=10.60.0.245")            
+    #cursorPG = connectPG.cursor()
+
+    # datos del tramo
+    #cursorPG.execute("""SELECT tipotra, tiposec, GREATEST(dim1,dim2), LEAST(dim1,dim2), zarriba, zabajo, longitud FROM public."SS_Tramos"
+    #                    WHERE CAST(id AS character varying) = '%s';""", (AsIs(id_tramo),))
+                        
+    #datos = cursorPG.fetchall()
+    #print(datos)
+    # cota de terreno (punto inicial)
+    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
+    #                 (SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
+    #cota_inicial = cursorPG.fetchall()
+    #print("cotaInicical: " + str(cotaInicial))
+    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = (SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
+   # existe1 = cursorPG.fetchone()
+    #print("existe1: " + str(existe1))
+
+
+    # punto final
+    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
+    #                (SELECT CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
+    #cota_final = cursorPG.fetchall()
+   # print("cotaFinal: " + str(cotaFinal))
+    # punto final
+    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
+    #                (SELECT CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
+    #existe2 = cursorPG.fetchone()
+    
+    #cursorPG.execute("""SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom, 1)))) AS numeric), CAST((SELECT ST_Y(ST_StartPoint(ST_GeometryN(t.geom, 1)))) AS numeric),
+    #                   CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom, 1)))) AS numeric), CAST((SELECT ST_Y(ST_EndPoint(ST_GeometryN(t.geom, 1)))) AS numeric)
+    #                    FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s';""", (AsIs(id_tramo),))
+    #[0] X de startPoint, [1] Y de startPoint, [2] endPoint, [3] endPoint
+    #coords_puntos_tapas = cursorPG.fetchone()
+    
+    #endregion
+    
     
 
 
@@ -328,6 +445,53 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     cota_final = [cota_final_CSV]
     coords_puntos_tapas = csv_data_tramos.iloc[int(id_tramo)][12:16]
     
+    coords_puntos = csv_data_tramos.iloc[int(id_tramo)][16]
+    array_puntos = str(coords_puntos).split(",")
+    # HAGO UNA RECTA QUE UNE EL PRIMER CON EL ULTIMO PUNTO (estos estaran en y = 0)
+    # Luego calculo todas las distancias de los puntos a esta recta, y esas distancias seran sus coordenads en y 
+    # Sus coords en Z son interpoladas entre los z del primer y ultimo punto.
+    # 
+    array_puntos.sort()
+    primer_punto_tramo = array_puntos[0]
+    ultimo_punto_tramo = array_puntos[len(array_puntos)-1]
+    
+    y1 = float(primer_punto_tramo.split(' ')[2])
+    x1 = float(primer_punto_tramo.split(' ')[1].split('(')[1])
+    
+    y2 = float(ultimo_punto_tramo.split(' ')[2])
+    x2 = float(ultimo_punto_tramo.split(' ')[1].split('(')[1])
+    pendiente_tramo_en_plano_XY = (y2 - y1) / (x2 - x1) 
+    #A B C son los valores de la recta escrita de forma implicita Ax +By +C = 0, despejo de forma parametrica m(x - x1) = y - y1 (m es la pendiente de la recta)
+    A = pendiente_tramo_en_plano_XY
+    B = -1
+    C = y1-pendiente_tramo_en_plano_XY*x1
+    distancias_de_puntos_a_recta_ejeY = []
+    distancias_de_punto_inicial_a_intermedios = []
+    distancias_de_puntos_a_recta_ejeX = []
+    
+    for i in range(0, len(array_puntos)):
+        
+        punto_intermedio = array_puntos[i]
+        y3 = float(punto_intermedio.split(' ')[2])
+        x3 = float(punto_intermedio.split(' ')[1].split('(')[1])
+        
+
+        P = [x3, y3]
+        distancia_punto_de_tramo_a_rectaY = distancia_punto_a_recta(A, B, C, P)
+        #print("distancia de : " + str(i) + " "  + str(distancia_punto_de_tramo_a_recta))
+        distancias_de_puntos_a_recta_ejeY.append(distancia_punto_de_tramo_a_rectaY)
+        
+        P1 = [x1, y1]
+        distancia_punto_inicial_e_intermedio = distancia_entre_puntos(P1, P)
+        distancias_de_punto_inicial_a_intermedios.append(distancia_punto_inicial_e_intermedio)
+        #Uso pitagoras para hallar coord en x local
+        distancia_en_eje_x = math.sqrt(math.pow(distancia_punto_inicial_e_intermedio, 2) + math.pow(distancia_punto_de_tramo_a_rectaY, 2))
+        distancias_de_puntos_a_recta_ejeX.append(distancia_en_eje_x)
+        
+    print(str(distancias_de_puntos_a_recta_ejeX))
+    # for i in range(0, len(array_puntos)):
+    #     print(array_puntos[i])
+
     
     if cota_inicial[0][0] == 0 and cota_final[0][0] == 0:
         fig = go.Figure(data=[])
@@ -344,13 +508,14 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
         app.server.my_variable = 'Danger!!'
 
 
-    diam = float(datos[0][2])
+
+    diam = max(float(datos[0][2]), float(datos[0][3]))
     zabajo = float(datos[0][5])
     zarriba = float(datos[0][4])
 
     color_colector_Hex = '#808080'
     color_colector_Rgba = 'rgba(128, 128, 128, .5)'
-
+    #factor es un dato consensuado, se lo pregunte a Nati, es el valor margen para construir alrededor de una tunelera
     if (datos[0][1] == 'ART'):
         espesor_arriba = 0.4
         espesor_abajo = 0.5
@@ -409,8 +574,28 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     ###################################    ######################################################################################################
     # FUNCION PARA CREAR CILINDROS 3D #    #RETORNA UNA MESH3D DEL CILINDRO Y DOS MATRICES CON LAS COORDS DE LAS CIRCUNFERENECIAS QUE LO FORMAN #
     ###################################    ######################################################################################################
-    
-
+    array_tramos_cilindro_mesh = []
+    array_tramos_cilindro_mesh2 = []
+    distancias_de_puntos_a_recta_ejeZ = np.linspace(x1, x2, len(distancias_de_puntos_a_recta_ejeX))
+    for i in range(0, len(distancias_de_puntos_a_recta_ejeX)-1):
+        caras_lados_cilindro_colector2 = crear_cilindro_mesh3d(distancias_de_puntos_a_recta_ejeZ[i], distancias_de_puntos_a_recta_ejeY[i], -distancias_de_puntos_a_recta_ejeX[i], 
+                                                               distancias_de_puntos_a_recta_ejeZ[i+1], distancias_de_puntos_a_recta_ejeY[i+1], -distancias_de_puntos_a_recta_ejeX[i+1], r1, r2, 
+                                                            'rgba(181, 181, 181, 1)', 1, 'Colector' + str(i), 'y', 
+                                                            math.pi / 2, name = 'ladoTramo' + str(i), trunco = False, 
+                                                            cota_final = cota_final, cota_inicial = cota_inicial, n = n)
+        array_tramos_cilindro_mesh.append(caras_lados_cilindro_colector2[0])
+        
+        #Para ahorrar memoria y recursos al dibujar solo la parte interior en los extremos
+        if(i == 0 or i == len(distancias_de_puntos_a_recta_ejeX)-1):
+            caras_lados_cilindro_colector3 = crear_cilindro_mesh3d(distancias_de_puntos_a_recta_ejeZ[i], distancias_de_puntos_a_recta_ejeY[i], -distancias_de_puntos_a_recta_ejeX[i], 
+                                                                distancias_de_puntos_a_recta_ejeZ[i+1], distancias_de_puntos_a_recta_ejeY[i+1], -distancias_de_puntos_a_recta_ejeX[i+1], 
+                                                                r1 - .1, r2 - .1, 'rgba(181, 181, 181, 1)', 1, 
+                                                                'Colector', 'y', math.pi / 2, name = 'ladoTramo2', trunco = False,
+                                                                cota_final = cota_final, cota_inicial = cota_inicial, n = n)
+            array_tramos_cilindro_mesh2.append(caras_lados_cilindro_colector3[0])
+        
+        
+        
     
     caras_lados_cilindro_colector = crear_cilindro_mesh3d(x1, y1, z1, x2, y2, z2, r1, r2, 'rgba(181, 181, 181, 1)', 1, 'Colector', 'y', math.pi / 2, name = 'ladoTramo1', trunco = False, cota_final = cota_final, cota_inicial = cota_inicial, n = n)
     caras_lados_cilindro_colector1 = crear_cilindro_mesh3d(x1, y1, z1, x2, y2, z2, r1 - .1, r2 - .1, 'rgba(181, 181, 181, 1)', 1, 'Colector', 'y', math.pi / 2, name = 'ladoTramo2', trunco = False, cota_final = cota_final, cota_inicial = cota_inicial, n = n)
@@ -436,6 +621,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     #                                     (datos[0][6], 0, cota_final[0][0]-(profundidad_tunelera-0.5*diametro_tunelera))
     #                                     ]
     #DIBUJA COTA DE TERRENO
+    
     puntos_plano_terreno = [(0, 0, cota_inicial[0][0]), 
                             (datos[0][6] / 2, 15, (cota_inicial[0][0] + cota_final[0][0]) / 2), 
                             (datos[0][6], 0, cota_final[0][0])
@@ -474,7 +660,6 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     # FUNCION PARA CREAR PRISMAS RECTOS       #
     ###########################################
     def crear_cube_mesh3d(puntos_plano, color, opcacity, info, extrude_distance):
-        #Creo los 4 vertices del cuadrado que representan una porcion del plano que pasa por los puntos que definen al mismo 
         vertcicesPlanoArray = [(puntos_plano[0][0], puntos_plano[0][1] + (lado/2), puntos_plano[0][2]),
                                (puntos_plano[2][0], puntos_plano[2][1] + (lado/2), puntos_plano[2][2]),
                                (puntos_plano[0][0], puntos_plano[0][1] - (lado/2), puntos_plano[0][2]),
@@ -491,11 +676,11 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
         j = [1, 3, 5, 7, 4, 5, 3, 3, 7, 6, 6, 0]
         k = [2, 1, 6, 5, 1, 1, 5, 5, 2, 7, 0, 6]
         return go.Mesh3d(x=x, y=y, z=z, i=i, j=j, k=k, color=color, opacity=opcacity, 
-        lightposition = dict(x = 1000, y = 0, z = 10000),
-        intensitymode = 'cell',
-        flatshading = True,
-        hovertemplate=info
-        )
+                        lightposition = dict(x = 1000, y = 0, z = 10000),
+                        intensitymode = 'cell',
+                        flatshading = True,
+                        hovertemplate=info
+                        )
 
     
     #####################################################
@@ -667,17 +852,22 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     #########################################################
     punto_fantasma = go.Scatter3d(x = [], y = [], z = []) #Por alguna razon al reproducir la animacion empieza a borrar los objetos de la lista data desde el principio, entonces creo puntos fantasmas para que borre esos
 
-        
+    para_ver = go.Scatter3d(x = distancias_de_puntos_a_recta_ejeX, y = distancias_de_puntos_a_recta_ejeY, z = np.linspace(zarriba, zabajo , len(distancias_de_puntos_a_recta_ejeY)))
     direccion_agua_arrow = go.Scatter3d(x = [0 - 1 , xf + 1], y = [0, 0], z = [zarriba, zabajo],
                                    mode = 'lines+markers+text',
                                    line = dict(color='blue', width=5),
                                    text = ['AA', 'aa'],
                                    textposition = 'top center', 
                                    marker = dict(size = 3))
-
-    fig = go.Figure(data = [ punto_fantasma, punto_fantasma, caras_lados_cilindro_redzone[0], caras_lados_cilindro_colector[0], caras_lados_cilindro_colector1[0], crear_cube_mesh3d(puntos_plano_terreno, 'rgba(150, 150, 163, 1)', 1, 'Superficie', .18), crear_plano_mesh3d(puntos_plano_terreno, 'rgb(128, 128, 138)', 1, '', .183),
-                            frente_colector, direccion_agua_arrow,
-                            border_colector_C1, border_colector_C2, border_colector1_C1, border_colector1_C2, border_redzone_C1, border_redzone_C2], 
+    dataFig = [punto_fantasma, punto_fantasma, caras_lados_cilindro_redzone[0], crear_cube_mesh3d(puntos_plano_terreno, 'rgba(150, 150, 163, 1)', 1, 'Superficie', .18), crear_plano_mesh3d(puntos_plano_terreno, 'rgb(128, 128, 138)', 1, '', .183),
+                frente_colector, direccion_agua_arrow,
+                border_colector_C1, border_colector_C2, border_colector1_C1, border_colector1_C2, border_redzone_C1, border_redzone_C2]
+    for i in range(0, len(array_tramos_cilindro_mesh)):
+        dataFig.append(array_tramos_cilindro_mesh[i])
+        if(i == 0 or i == len(array_tramos_cilindro_mesh)):
+            dataFig.append(array_tramos_cilindro_mesh2[i])
+        #, caras_lados_cilindro_colector[0], caras_lados_cilindro_colector1[0]
+    fig = go.Figure(data = dataFig, 
                             frames = frames_anim, 
                             layout = go.Layout(updatemenus = [dict(
                                                 type = "buttons",
@@ -711,19 +901,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     #######    ANOTACIONES              ##########
     ##############################################
 
-    anotaciones = [
-    #                     dict(x = xf, 
-    #                     y = 0, 
-    #                     z = cota_inicial[0][0], 
-    #                     text = 'Largo de colector: ' + str(round(xf, 2)) + 'm' + '<br>Aguas arriba', 
-    #                     arrowcolor = "black",
-    #                     arrowsize = 2,
-    #                     arrowwidth = 1,
-    #                     arrowhead = 1,
-    #                     xanchor = 'left',
-    #                     bordercolor = '#969696', bgcolor = '#cccccc', align = 'left'
-    #                     )
-                    ]
+    anotaciones = []
     anotacion_tunelera = dict(x = x_dis_esquina, y = -lado/1.5, z = cota_inicial[0][0] - profundidad_tunelera, text = 'Camino para tunelera<br>Profundidad: ' + str(profundidad_tunelera) + 'm' + '<br>Diametro: ' + str(diametro_tunelera) + 'm',
                                 bordercolor = '#969696', bgcolor = '#cccccc', align = 'left' )
     if(profundidad_tunelera > 0):
@@ -985,6 +1163,7 @@ image_card = dbc.Card(
                 html.H6('Profundidad Tunelera(m)', className='label'),
                 dcc.Input(value = '0', type = 'number', id = 'profundidadTun', className='Input'),
                 html.H6('distancia a Esquina Aguas Arriba (m)', className='label'),
+                dcc.RadioItems(['Por calzada', 'Por vereda'], 'Por calzada'),
                 dcc.Input(value = '1', type = 'number', id = 'disEsq', className='Input'),
                 html.Button('Gnerear grafico', id='button', n_clicks = 0, className='Button'),
                 html.Hr(),
@@ -1051,8 +1230,9 @@ app.layout = html.Div([
 )
 def update_figure(selected_ID, diametro_tunelera, profundidad_tunelera, dis_esquina, n_clicks):
     fig = create_graph(selected_ID, float(diametro_tunelera), float(profundidad_tunelera), float(dis_esquina))
-    _map = make_map(csv_data_tramos, selected_ID, dis_esquina)
-    
+    #_map = make_map(csv_data_tramos, selected_ID, dis_esquina)
+
+    _map = make_map_2(csv_data_tramos, selected_ID)
     if  (app.server.my_variable != 'Danger!!'):
         fig[0].update_layout(transition_duration = 500)
         fig[1].update_layout(transition_duration = 500)
