@@ -488,7 +488,6 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
         distancia_en_eje_x = math.sqrt(math.pow(distancia_punto_inicial_e_intermedio, 2) + math.pow(distancia_punto_de_tramo_a_rectaY, 2))
         distancias_de_puntos_a_recta_ejeX.append(distancia_en_eje_x)
         
-    print(str(distancias_de_puntos_a_recta_ejeX))
     # for i in range(0, len(array_puntos)):
     #     print(array_puntos[i])
 
@@ -529,11 +528,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
         espesor_abajo = 0.3
 
 
-    y_redzone_1 = zarriba - factor*diam - espesor_abajo
-    y_redzone_2 = zabajo - factor*diam - espesor_abajo
 
-    y_redzone_12 = diam + zarriba + factor*diam + espesor_arriba
-    y_redzone_22 = diam + zabajo + factor*diam + espesor_arriba
 
     a = float(datos[0][4]) - float(datos[0][5])
     b = float(datos[0][6])
@@ -556,6 +551,15 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     y2 = 0
     z2 = -xf
 
+    r1 = (zarriba + diam + espesor_arriba) - x1
+    r2 = (zabajo + diam + espesor_arriba) - x2
+
+    y_redzone_1 = x1 - r1 - (factor*diametro_tunelera) #zarriba - factor*diametro_tunelera - espesor_abajo
+    y_redzone_2 = x2 - r2 - (factor*diametro_tunelera)#zabajo - factor*diametro_tunelera - espesor_abajo
+
+    y_redzone_12 = x1 + r1 + (factor*diametro_tunelera)#diametro_tunelera + zarriba + factor*diametro_tunelera + espesor_arriba
+    y_redzone_22 = x2 + r2 + (factor*diametro_tunelera)#diametro_tunelera + zabajo + factor*diametro_tunelera + espesor_arriba
+    
     x3 = (y_redzone_1 + y_redzone_12) / 2
     y3 = 0
     z3 = 0
@@ -566,8 +570,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
 
     n = 31
     # Radios de las circunferencia
-    r1 = (zarriba + diam + espesor_arriba) - x1
-    r2 = (zabajo + diam + espesor_arriba) - x2
+
     r3 = y_redzone_1 - x3
     r4 = y_redzone_2 - x4
 
@@ -576,6 +579,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     ###################################    ######################################################################################################
     array_tramos_cilindro_mesh = []
     array_tramos_cilindro_mesh2 = []
+    array_tramos_cilindors_redZone_mesh = []
     distancias_de_puntos_a_recta_ejeZ = np.linspace(x1, x2, len(distancias_de_puntos_a_recta_ejeX))
     for i in range(0, len(distancias_de_puntos_a_recta_ejeX)-1):
         caras_lados_cilindro_colector2 = crear_cilindro_mesh3d(distancias_de_puntos_a_recta_ejeZ[i], distancias_de_puntos_a_recta_ejeY[i], -distancias_de_puntos_a_recta_ejeX[i], 
@@ -593,6 +597,13 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
                                                                 'Colector', 'y', math.pi / 2, name = 'ladoTramo2', trunco = False,
                                                                 cota_final = cota_final, cota_inicial = cota_inicial, n = n)
             array_tramos_cilindro_mesh2.append(caras_lados_cilindro_colector3[0])
+            
+        caras_lados_rezZone = crear_cilindro_mesh3d(distancias_de_puntos_a_recta_ejeZ[i], distancias_de_puntos_a_recta_ejeY[i], -distancias_de_puntos_a_recta_ejeX[i],
+                                                        distancias_de_puntos_a_recta_ejeZ[i+1], distancias_de_puntos_a_recta_ejeY[i+1], -distancias_de_puntos_a_recta_ejeX[i+1],
+                                                        r3, r4, 'rgba(255, 66, 85, 1)', .25, 
+                                                        'Zona no permitida para perforaciones', 'y', math.pi / 2, 
+                                                        name = 'ladoRD', trunco = True, cota_final = cota_final, cota_inicial = cota_inicial, n = n)
+        array_tramos_cilindors_redZone_mesh.append(caras_lados_rezZone[0])
         
         
         
@@ -852,21 +863,24 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     #########################################################
     punto_fantasma = go.Scatter3d(x = [], y = [], z = []) #Por alguna razon al reproducir la animacion empieza a borrar los objetos de la lista data desde el principio, entonces creo puntos fantasmas para que borre esos
 
-    para_ver = go.Scatter3d(x = distancias_de_puntos_a_recta_ejeX, y = distancias_de_puntos_a_recta_ejeY, z = np.linspace(zarriba, zabajo , len(distancias_de_puntos_a_recta_ejeY)))
+    #zarriba + diam + espesor_arriba
+    #para_ver = go.Scatter3d(x = [0, 0, xf, xf], y = [0, 0, 0, 0], z = [x1 + r1 + (factor*diametro_tunelera) , x1 - r1 - (factor*diametro_tunelera) , x2 + r2 + (factor*diametro_tunelera) , x2 - r2 - (factor*diametro_tunelera) ])
+    #para_ver2 = go.Scatter3d(x = [xf], y = [0], z =[x1])
     direccion_agua_arrow = go.Scatter3d(x = [0 - 1 , xf + 1], y = [0, 0], z = [zarriba, zabajo],
                                    mode = 'lines+markers+text',
                                    line = dict(color='blue', width=5),
                                    text = ['AA', 'aa'],
                                    textposition = 'top center', 
                                    marker = dict(size = 3))
-    dataFig = [punto_fantasma, punto_fantasma, caras_lados_cilindro_redzone[0], crear_cube_mesh3d(puntos_plano_terreno, 'rgba(150, 150, 163, 1)', 1, 'Superficie', .18), crear_plano_mesh3d(puntos_plano_terreno, 'rgb(128, 128, 138)', 1, '', .183),
+    dataFig = [punto_fantasma, punto_fantasma, crear_cube_mesh3d(puntos_plano_terreno, 'rgba(150, 150, 163, 1)', 1, 'Superficie', .18), crear_plano_mesh3d(puntos_plano_terreno, 'rgb(128, 128, 138)', 1, '', .183),
                 frente_colector, direccion_agua_arrow,
                 border_colector_C1, border_colector_C2, border_colector1_C1, border_colector1_C2, border_redzone_C1, border_redzone_C2]
     for i in range(0, len(array_tramos_cilindro_mesh)):
         dataFig.append(array_tramos_cilindro_mesh[i])
         if(i == 0 or i == len(array_tramos_cilindro_mesh)):
             dataFig.append(array_tramos_cilindro_mesh2[i])
-        #, caras_lados_cilindro_colector[0], caras_lados_cilindro_colector1[0]
+        dataFig.append(array_tramos_cilindors_redZone_mesh[i])
+        #, caras_lados_cilindro_colector[0], caras_lados_cilindro_colector1[0] , caras_lados_cilindro_redzone[0]
     fig = go.Figure(data = dataFig, 
                             frames = frames_anim, 
                             layout = go.Layout(updatemenus = [dict(
