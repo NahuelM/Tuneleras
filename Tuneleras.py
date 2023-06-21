@@ -177,7 +177,21 @@ def crear_cilindro_mesh3d(Xcoord_C1, Ycoord_C1, ZCoord_C1, Xcoord_C2, Ycoord_C2,
             VkCy1.append(((i+1) % ((n*2) - 2)) + 1)
             
         # Crear una malla de la caras laterales del cilindro
-        return [go.Mesh3d(x = xcy1, y = ycy1, z = zcy1, i = ViCy1, j = VjCy1, k = VkCy1, color = color, opacity = opacity, flatshading = True, intensitymode = 'cell', hovertemplate=info, name = name), [x_rc1, y_rc1, z_rc1], [x_rc2, y_rc2, z_rc2]]
+        return [go.Mesh3d(x = xcy1,
+                          y = ycy1,
+                          z = zcy1,
+                          i = ViCy1,
+                          j = VjCy1,
+                          k = VkCy1, 
+                          color = color,
+                          opacity = opacity, 
+                          flatshading = True,
+                          intensitymode = 'cell',
+                          lightposition = dict(x = 0, y = 100, z = 100),
+                          hovertemplate=info,
+                          name = name),
+                [x_rc1, y_rc1, z_rc1],
+                [x_rc2, y_rc2, z_rc2]]
 
 def make_map_2(tramos_csv, id):
     transformer = pyproj.Transformer.from_crs("EPSG:32721", "EPSG:4326")
@@ -192,10 +206,11 @@ def make_map_2(tramos_csv, id):
     lat_array = []
     lon_array = []
     hover_data = []
-    array_puntos.sort()
+    #array_puntos = sorted(array_puntos)
+    #array_puntos = ordenar_puntos_por_distancia_al_origen(array_puntos)
     for i in range(0, len_array_puntos):
         array_aux = array_puntos[i].split(" ")
-        x = float(array_aux[1].split("(")[1])
+        x = float(array_aux[1])
         y = float(array_aux[2])
         
         lat, lon = transformer.transform(x, y)
@@ -240,7 +255,15 @@ def make_map_2(tramos_csv, id):
         margin = {"r":0,"t":1,"l":0,"b":0}
     )
     return fig
-    
+ 
+def calcular_distancia_al_origen(punto):
+    #distancia = math.sqrt(**2 + float(punto[2])**2)
+    distancia = math.atan2(float(punto[2]), float(punto[1]))
+    return distancia
+
+def ordenar_puntos_por_distancia_al_origen(puntos):
+    puntos_ordenados = sorted(puntos, key=calcular_distancia_al_origen)
+    return puntos_ordenados
 
 def make_map(tramos_csv, id, dis_esq):
     datos_CSV = tramos_csv.iloc[int(id)][0:16]
@@ -451,15 +474,18 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     # Luego calculo todas las distancias de los puntos a esta recta, y esas distancias seran sus coordenads en y 
     # Sus coords en Z son interpoladas entre los z del primer y ultimo punto.
     # 
-    array_puntos.sort()
+    #array_puntos.sort()
+    #print(array_puntos[0].split(" ")[1])
+    #array_puntos = ordenar_puntos_por_distancia_al_origen(array_puntos)
+   
     primer_punto_tramo = array_puntos[0]
     ultimo_punto_tramo = array_puntos[len(array_puntos)-1]
     
     y1 = float(primer_punto_tramo.split(' ')[2])
-    x1 = float(primer_punto_tramo.split(' ')[1].split('(')[1])
+    x1 = float(primer_punto_tramo.split(' ')[1])
     
     y2 = float(ultimo_punto_tramo.split(' ')[2])
-    x2 = float(ultimo_punto_tramo.split(' ')[1].split('(')[1])
+    x2 = float(ultimo_punto_tramo.split(' ')[1])
     pendiente_tramo_en_plano_XY = (y2 - y1) / (x2 - x1) 
     #A B C son los valores de la recta escrita de forma implicita Ax +By +C = 0, despejo de forma parametrica m(x - x1) = y - y1 (m es la pendiente de la recta)
     A = pendiente_tramo_en_plano_XY
@@ -473,7 +499,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
         
         punto_intermedio = array_puntos[i]
         y3 = float(punto_intermedio.split(' ')[2])
-        x3 = float(punto_intermedio.split(' ')[1].split('(')[1])
+        x3 = float(punto_intermedio.split(' ')[1])
         
 
         P = [x3, y3]
@@ -662,7 +688,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
             vertexnormalsepsilon = 1e-20,
             facenormalsepsilon = 0
         ), 
-        lightposition = dict(x = 0, y = 0, z = 10000),
+        lightposition = dict(x = 0, y = 100, z = 100),
         intensitymode = 'cell',
         flatshading = True,
         hovertemplate=info)
@@ -687,7 +713,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
         j = [1, 3, 5, 7, 4, 5, 3, 3, 7, 6, 6, 0]
         k = [2, 1, 6, 5, 1, 1, 5, 5, 2, 7, 0, 6]
         return go.Mesh3d(x=x, y=y, z=z, i=i, j=j, k=k, color=color, opacity=opcacity, 
-                        lightposition = dict(x = 1000, y = 0, z = 10000),
+                        lightposition = dict(x = 0, y = 100, z = 100),
                         intensitymode = 'cell',
                         flatshading = True,
                         hovertemplate=info
@@ -949,7 +975,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     #################################################################
     ##### CREA LA GRAFICA 2D ########################################
     #################################################################
-    def crear2D():
+    def make_graphic_2D():
         """Crea la grafica 2d que esta a la derecha en el dibujo """
         
         #COTA DE TERRENO
@@ -1098,7 +1124,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
     
     
 
-    return [fig, crear2D(), datos_to_tabla]
+    return [fig, make_graphic_2D(), datos_to_tabla]
 
 
 ################################################
