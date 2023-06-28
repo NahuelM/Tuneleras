@@ -679,9 +679,14 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina)
                                    textposition = 'top center', 
                                    marker = dict(size = 3))
 
-    fig = go.Figure(data = [ punto_fantasma, punto_fantasma, caras_lados_cilindro_redzone[0], caras_lados_cilindro_colector[0], caras_lados_cilindro_colector1[0], crear_cube_mesh3d(puntos_plano_terreno, 'rgba(150, 150, 163, 1)', 1, 'Superficie', .18), crear_plano_mesh3d(puntos_plano_terreno, 'rgb(128, 128, 138)', 1, '', .183),
-                            frente_colector, direccion_agua_arrow,
-                            border_colector_C1, border_colector_C2, border_colector1_C1, border_colector1_C2, border_redzone_C1, border_redzone_C2], 
+    dataFig = [ punto_fantasma, punto_fantasma, caras_lados_cilindro_colector[0], caras_lados_cilindro_colector1[0], crear_cube_mesh3d(puntos_plano_terreno, 'rgba(150, 150, 163, 1)', 1, 'Superficie', .18), crear_plano_mesh3d(puntos_plano_terreno, 'rgb(128, 128, 138)', 1, '', .183),
+                frente_colector, direccion_agua_arrow,
+                border_colector_C1, border_colector_C2, border_colector1_C1, border_colector1_C2]
+    if(diametro_tunelera > 0):
+        dataFig.append(caras_lados_cilindro_redzone[0])
+        dataFig.append(border_redzone_C1)
+        dataFig.append(border_redzone_C2)
+    fig = go.Figure(data = dataFig, 
                             frames = frames_anim, 
                             layout = go.Layout(updatemenus = [dict(
                                                 type = "buttons",
