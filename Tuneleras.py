@@ -1,4 +1,3 @@
-
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pyproj
@@ -27,7 +26,6 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, {
         'rel': 'stylesheet'
 }, dbc.icons.BOOTSTRAP], title='Tuneleras')
 server = app.server
-
 
 csv_data_tramos = pd.read_csv('Datos.csv', delimiter = ',')
 
@@ -196,6 +194,7 @@ def crear_cilindro_mesh3d(Xcoord_C1, Ycoord_C1, ZCoord_C1, Xcoord_C2, Ycoord_C2,
                 [x_rc1, y_rc1, z_rc1],
                 [x_rc2, y_rc2, z_rc2]]
 
+
 def make_map_2(tramos_csv, id, dis_esq, ang_tun):
     datos_CSV = tramos_csv.iloc[int(id)][0:16]
     datos = [datos_CSV]
@@ -302,13 +301,25 @@ def make_map_2(tramos_csv, id, dis_esq, ang_tun):
     m2 = (-1/(pendiente))
     m_ajustada = math.tan(math.atan(m2) + math.radians(-float(ang_tun)))
     m2 = m_ajustada
-    # angulo_rectas = math.atan((m2 - m1) / (1 + (m2 * m1)))
-    #print("Angulo entre rectas: " + str(m2) + " " + str(m1) + "  " + str(m2*m1))
-
+    angulo_rectas = 0
+    if(m2*m1 != -1):
+        angulo_rectas = math.atan((m2 - m1) / (1 + (m2 * m1)))
+    else:
+        angulo_rectas = math.pi/2
+        
     
     lat_pt_tramo1, lon_pt_tramo1 = transformer.transform(x2 + dis_cateto_adj, recta_tramo(x2 + dis_cateto_adj))
     lat_pt_tramo2, lon_pt_tramo2 = transformer.transform(x2 + dis_cateto_adj - 4, recta_tun(x2 + dis_cateto_adj - 4))
     lat_pt_tramo3, lon_pt_tramo3 = transformer.transform(x2 + dis_cateto_adj + 4, recta_tun(x2 + dis_cateto_adj + 4))
+    
+    lat_pt_angle, lon_pt_angle = transformer.transform(x2 + dis_cateto_adj + 3, recta_tramo(x2 + dis_cateto_adj))
+    
+    map_angle = go.Scattermapbox(
+        lat = [lat_pt_angle],
+        lon = [lon_pt_angle],
+        mode = 'text',
+        text = 'ángulo: ' + str(math.degrees(angulo_rectas))
+    )
     
     map_tunelera = go.Scattermapbox(
         lat = [lat_pt_tramo1, lat_pt_tramo2, lat_pt_tramo3],
@@ -335,9 +346,7 @@ def make_map_2(tramos_csv, id, dis_esq, ang_tun):
         
     lat_array_dis.append(lat_pt_tramo1)
     lon_array_dis.append(lon_pt_tramo1)
-    # lat_array_dis.append((lat_pt_tramo1 + float(lat_array[indices[0]]))/2)
-    # lon_array_dis.append((lon_pt_tramo1 + float(lon_array[indices[0]]))/2)
-    
+
     map_dis = go.Scattermapbox(
         lat = lat_array_dis,
         lon = lon_array_dis,
@@ -348,15 +357,16 @@ def make_map_2(tramos_csv, id, dis_esq, ang_tun):
             
         ),
         #text = ['', 'dis: ' + str(round(math.sqrt(a + b), 1)) + 'm', '']
-        text = ['', 'dis: ' + str(dis_esq) + 'm', ''],
+        text = ['', 'dis: '+ str(dis_esq) + 'm', ''],
         showlegend = False
     )
     
     
     
     
-    array_maps.append(map_tunelera)
-    array_maps.append(map_dis)
+    # array_maps.append(map_tunelera)
+    # array_maps.append(map_dis)
+    array_maps.extend([map_angle, map_tunelera, map_dis])
     fig = go.Figure(data = array_maps)
     fig.update_layout(
         mapbox = dict(
@@ -380,8 +390,6 @@ def calcular_distancia_al_origen(punto):
 def ordenar_puntos_por_distancia_al_origen(puntos):
     puntos_ordenados = sorted(puntos, key=calcular_distancia_al_origen)
     return puntos_ordenados
-
-
 
 def distancia_punto_a_recta(A, B, C, P):
     #formula de distancioa de punto a recta
@@ -443,43 +451,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
     app.server.my_variable = 'Initial value'
     app.server.danger_type = ''
     app.server.many_points = True
-    #region Querys
-    #connectPG = psycopg2.connect("dbname=PGSEPS user=postgres password=eps host=10.60.0.245")            
-    #cursorPG = connectPG.cursor()
 
-    # datos del tramo
-    #cursorPG.execute("""SELECT tipotra, tiposec, GREATEST(dim1,dim2), LEAST(dim1,dim2), zarriba, zabajo, longitud FROM public."SS_Tramos"
-    #                    WHERE CAST(id AS character varying) = '%s';""", (AsIs(id_tramo),))
-                        
-    #datos = cursorPG.fetchall()
-    #print(datos)
-    # cota de terreno (punto inicial)
-    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
-    #                 (SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
-    #cota_inicial = cursorPG.fetchall()
-    #print("cotaInicical: " + str(cotaInicial))
-    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = (SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
-   # existe1 = cursorPG.fetchone()
-    #print("existe1: " + str(existe1))
-
-
-    # punto final
-    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
-    #                (SELECT CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
-    #cota_final = cursorPG.fetchall()
-   # print("cotaFinal: " + str(cotaFinal))
-    # punto final
-    #cursorPG.execute("""SELECT cota, id FROM "SS_Puntos" p WHERE CAST((SELECT ST_X(ST_GeometryN(p.geom,1))) AS numeric) = 
-    #                (SELECT CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom,1)))) AS numeric) FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s');""", (AsIs(id_tramo),))
-    #existe2 = cursorPG.fetchone()
-    
-    #cursorPG.execute("""SELECT CAST((SELECT ST_X(ST_StartPoint(ST_GeometryN(t.geom, 1)))) AS numeric), CAST((SELECT ST_Y(ST_StartPoint(ST_GeometryN(t.geom, 1)))) AS numeric),
-    #                   CAST((SELECT ST_X(ST_EndPoint(ST_GeometryN(t.geom, 1)))) AS numeric), CAST((SELECT ST_Y(ST_EndPoint(ST_GeometryN(t.geom, 1)))) AS numeric)
-    #                    FROM "SS_Tramos" t WHERE CAST(id AS character varying) = '%s';""", (AsIs(id_tramo),))
-    #[0] X de startPoint, [1] Y de startPoint, [2] endPoint, [3] endPoint
-    #coords_puntos_tapas = cursorPG.fetchone()
-    
-    #endregion
     
     id_tramo = abs(int(id_tramo))
     if int(id_tramo) == 0:
@@ -500,13 +472,6 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
     if(len(array_puntos) > 20):
         app.server.many_points = False
     # HAGO UNA RECTA QUE UNE EL PRIMER CON EL ULTIMO PUNTO (estos estaran en y = 0)
-    # Luego calculo todas las distancias de los puntos a esta recta, y esas distancias seran sus coordenads en y 
-    # Sus coords en Z son interpoladas entre los z del primer y ultimo punto.
-    # 
-    #array_puntos.sort()
-    #print(array_puntos[0].split(" ")[1])
-    #array_puntos = ordenar_puntos_por_distancia_al_origen(array_puntos)
-    
     primer_punto_tramo = array_puntos[0]
     ultimo_punto_tramo = array_puntos[len(array_puntos)-1]
     
@@ -519,7 +484,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
     #A B C son los valores de la recta escrita de forma implicita Ax +By +C = 0, despejo de forma parametrica m(x - x1) = y - y1 (m es la pendiente de la recta)
     A = pendiente_tramo_en_plano_XY
     B = -1
-    C = y1-pendiente_tramo_en_plano_XY*x1
+    C = y1 - pendiente_tramo_en_plano_XY * x1
     distancias_de_puntos_a_recta_ejeY = []
     distancias_de_punto_inicial_a_intermedios = []
     distancias_de_puntos_a_recta_ejeX = []
@@ -586,9 +551,6 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
 
 
 
-    # a = float(datos[0][4]) - float(datos[0][5])
-    # b = float(datos[0][6])
-    # res = b * b - (a * a)
     res = (x2-x1)**2 + (y2-y1)**2
 
     if (res > 0):
@@ -681,17 +643,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
     
     border_redzone_C1 = go.Scatter3d(x = caras_lados_cilindro_redzone[1][0], y = caras_lados_cilindro_redzone[1][1], z = caras_lados_cilindro_redzone[1][2], mode = 'lines', marker = dict(color = 'rgba(181, 0, 24, 1)'), hovertemplate='-')
     border_redzone_C2 = go.Scatter3d(x = caras_lados_cilindro_redzone[2][0], y = caras_lados_cilindro_redzone[2][1], z = caras_lados_cilindro_redzone[2][2], mode = 'lines', marker = dict(color = 'rgba(181, 0, 24, 1)'), hovertemplate='-')
-    #propuesta tunelera más abajo
-    # puntosPropuestaTuneleraAbajo = [(0, 0, cota_inicial[0][0]-(profundidad_tunelera+0.5*diametro_tunelera)), 
-    #                                 (datos[0][6] / 2, 15, ((cota_inicial[0][0]-(profundidad_tunelera+0.5*diametro_tunelera) + cota_final[0][0]-(profundidad_tunelera+0.5*diametro_tunelera))/2)), 
-    #                                 (datos[0][6], 0, cota_final[0][0]-(profundidad_tunelera+0.5*diametro_tunelera))
-    #                                 ]
 
-    # #propuesta tunelera más arriba
-    # puntos_propuesta_tunelera_Arriba = [(0, 0, cota_inicial[0][0]-(profundidad_tunelera-0.5*diametro_tunelera)), 
-    #                                     (datos[0][6] / 2, 15, ((cota_inicial[0][0]-(profundidad_tunelera-0.5*diametro_tunelera) + cota_final[0][0]-(profundidad_tunelera-0.5*diametro_tunelera))/2)), 
-    #                                     (datos[0][6], 0, cota_final[0][0]-(profundidad_tunelera-0.5*diametro_tunelera))
-    #                                     ]
     #DIBUJA COTA DE TERRENO
     
     puntos_plano_terreno = [(0, 0, cota_inicial[0][0]), 
@@ -789,8 +741,6 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
         return pendiente2 * X - (pendiente2*0) + (cota_inicial[0][0])
     #if (dis_esquina >= 0):
     x_dis_esquina = dis_esquina
-    # if(datos[0][0] == 'IMP'):
-    #     x_dis_esquina = math.fabs(xf - dis_esquina)    
     
     
     # pendiente = (Z1 - Z0) / (X1 - X0)
@@ -852,23 +802,26 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
             l += 1
         return no_intersecta
     
-    #framesAnim = [go.Frame(data=[go.Scatter3d(x = [xDisEsquina], y = [yFrames[k]], z = [profundidadReltaiva], mode = 'markers', marker=dict(color="green", size=10))]) for k in range(cantFrames)]
+  
     frames_anim = []
     
     
     #### ANIMACION DE CAMARA
-    # Obtiene las coordenadas de la cámara
-
     lado_cam_movment = 1 if x_dis_esquina > xf/2 else -1
-    l = 2 if xf < 20 else 20
-    #factor_mov_cam = (xf/30)+l
-    factor_mov_cam = abs((xf/l) - x_dis_esquina) 
-            
-    X_cam_path = np.linspace(0, factor_mov_cam*lado_cam_movment, cant_frames)
-    Y_cam_path = np.linspace(3, 0.5, cant_frames)
-    Z_cam_path = 0.1
+
+    
+    X_cam_path = np.linspace(1, 3.7*lado_cam_movment, cant_frames)
+    Y_cam_path = np.linspace(3, 0.05, cant_frames)
+    Z_cam_path = 0.01
+
     for t in range(cant_frames):
-        frame_cam = dict(layout=dict(scene=dict(camera=dict(eye=dict(x=X_cam_path[t], y=Y_cam_path[t], z=Z_cam_path), center = dict(x = 0, y = 0, z = 0)))))
+        frame_cam = dict(layout = dict(
+            scene = dict(camera = dict(
+                eye = dict(
+                    x = X_cam_path[t], 
+                    y = Y_cam_path[t], 
+                    z = Z_cam_path), 
+                center = dict(x = 0, y = 0, z = 0)))))
         frames_anim.append(frame_cam)
     
 
@@ -878,7 +831,8 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
     ######################################## 
     ## Cilidro que representa la tunelera ## 
     ######################################## 
-    dis_cat_op = math.sin(math.radians(float(ang_tun)))*h
+    dis_cat_op = math.sin(math.radians(-float(ang_tun)))*h
+    
     cilindro_Frame = crear_cilindro_mesh3d(x_dis_esquina + dis_cat_op, -profundidad_reltaiva, lado/1.5, x_dis_esquina - dis_cat_op, -profundidad_reltaiva, h, diametro_tunelera/2, diametro_tunelera/2, 'rgba(204, 204, 204, .8)', 1, 'Tunelera', 'x', math.pi / 2, name='propTun', trunco = False, cota_final = cota_final, cota_inicial = cota_inicial, n = n)
     
     dis_cat_op_array_interpolation = np.linspace(-dis_cat_op, dis_cat_op, cant_frames+1)
@@ -948,9 +902,6 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
     #########################################################
     punto_fantasma = go.Scatter3d(x = [], y = [], z = []) #Por alguna razon al reproducir la animacion empieza a borrar los objetos de la lista data desde el principio, entonces creo puntos fantasmas para que borre esos
 
-    #zarriba + diam + espesor_arriba
-    #para_ver = go.Scatter3d(x = [0, 0, xf, xf], y = [0, 0, 0, 0], z = [x1 + r1 + (factor*diametro_tunelera) , x1 - r1 - (factor*diametro_tunelera) , x2 + r2 + (factor*diametro_tunelera) , x2 - r2 - (factor*diametro_tunelera) ])
-    #para_ver2 = go.Scatter3d(x = [xf], y = [0], z =[x1])
     array_string_text_direccion_agua = ["AA"]
     for i in range(1, len(array_tramos_cilindro_mesh)):
         array_string_text_direccion_agua.append(" ")
@@ -977,7 +928,6 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
     if(diametro_tunelera > 0):
         dataFig.append(border_redzone_C1)
         dataFig.append(border_redzone_C2)
-        #, caras_lados_cilindro_colector[0], caras_lados_cilindro_colector1[0] , caras_lados_cilindro_redzone[0]
     fig = go.Figure(data = dataFig, 
                             frames = frames_anim, 
                             layout = go.Layout(updatemenus = [dict(
@@ -1005,7 +955,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
                                              z = [profundidad_reltaiva, profundidad_reltaiva], 
                                              mode='lines+markers',  
                                              marker = dict(color = 'black', size = 5), 
-                                             line=dict(dash = 'longdashdot'))
+                                             line = dict(dash = 'longdashdot'))
         fig.add_trace(cilindro_tunelera[0])
         fig.add_trace(border_cilindro_tun)
         fig.add_trace(border_cilindro_tun1)
@@ -1022,9 +972,6 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
     if(profundidad_tunelera > 0):
         anotaciones.append(anotacion_tunelera)
         
-    # if(anotacion_error != None):
-    #     time.sleep(2)
-    #     anotaciones.append(anotacion_error)
     fig.update_xaxes(layer = 'below traces')
     fig.update_yaxes(layer = 'below traces')
 
@@ -1108,10 +1055,6 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
                                          hovertemplate='Zona no permitida para perforar', 
                                          hoverinfo = 'name')
 
-        #PROPUESTA TUNELERA
-        #prop_tun_arriba = go.Scatter(x = [0, xf], y = [cota_inicial[0][0] - (profundidad_tunelera + 0.5*diametro_tunelera), cota_final[0][0] - (profundidad_tunelera + 0.5*diametro_tunelera)], legendgroup = 'propTun',  marker = dict(color = 'green'), line = dict(dash = 'dash'), mode = 'lines') 
-        #prop_tun_Abajo = go.Scatter(x = [0, xf], y = [cota_inicial[0][0] - (profundidad_tunelera - 0.5*diametro_tunelera), cota_final[0][0] - (profundidad_tunelera - 0.5*diametro_tunelera)], legendgroup = 'propTun',  marker = dict(color = 'green'), line = dict(dash = 'dash'), mode = 'lines')
-        
         #FILL
         x = [0, xf, xf, 0]
         y = [zarriba+diam+espesor_arriba, zabajo+diam+espesor_arriba, zabajo-espesor_abajo, zarriba-espesor_abajo]
@@ -1123,8 +1066,6 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
         fill_red_zone_abajo = go.Scatter(x = x, y = y, mode = 'none', legendgroup = 'redZone', fill = 'toself', fillcolor = 'rgba(255, 66, 85, .5)', showlegend = False, hovertemplate = 'Zona no permitida para perforar', hoverinfo = 'name', name = 'No permitido para perforacion')
         
         coords_center_tuneleras = [x_dis_esquina,  profundidad_reltaiva]
-        #puntosAux = go.Scatter(x = [coords_center_tuneleras[0]-diametro_tunelera/2, coords_center_tuneleras[0]+diametro_tunelera/2], y = [coords_center_tuneleras[1]-diametro_tunelera/2, coords_center_tuneleras[1]+diametro_tunelera/2])
-        #center_tun = go.Scatter(x = [coords_center_tuneleras[0]], y = [coords_center_tuneleras[1]])
         fig = go.Figure( data=([ terreno, tramo_arriba, tramo_abajo, lim_red_zone_abajo, lim_red_zone_arriba, fill_tramo_area, fill_red_zone_arriba, fill_red_zone_abajo]))
 
         #Dibuja un circulo inscripto en el cuadrado con el vertice inferior izquiero en coords(x0, y0) y el vertice superior derecho (x1, y1)
@@ -1139,7 +1080,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
             x_line_circle = ((coords_center_tuneleras[0] - diametro_tunelera/2 + dis_cat_op) + (coords_center_tuneleras[0] + diametro_tunelera/2 + dis_cat_op)) / 2
             y_line_circle = coords_center_tuneleras[1] - diametro_tunelera/2
             
-            if(float(ang_tun) > 0):
+            if(float(ang_tun) != 0):
                 fig.add_shape(type = "circle",
                     xref = "x",
                     yref = "y",
@@ -1165,8 +1106,7 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
             fig.add_trace(go.Scatter(
                 x = [x_line_circle, x_line_circle],
                 y = [y_line_circle, y_],
-                mode = 'lines+text',
-                text = [str(abs(round(y_line_circle - y_, 3)))],
+                mode = 'lines',
                 line = dict(
                     color = 'black',
                     width = 2,
@@ -1174,6 +1114,11 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
                 ),
                 showlegend = False
             ))
+            fig.add_annotation(text = str(abs(round(y_line_circle - y_, 3))) + 'm',
+                  x = x_line_circle + .5, y = (y_line_circle + y_)/2, 
+                  showarrow = False,
+                  textangle = 0
+            )
                 
                 
         min_y = np.min([y_redzone_1, y_redzone_2, y_redzone_12, y_redzone_22])
@@ -1401,18 +1346,27 @@ graph_card = dbc.Card(
         dbc.CardBody(
             [
                 html.H4("GRAFICAS", className="card-title", style={"text-align": "center"}),
+                dcc.Loading(
+                    id = "loading-1",
+                    type = "graph",
+                    children = html.Div(id="loading-output-1"),
+                    fullscreen = True,
+                    className = 'Loading',
+                    debug = False
+                ),
                 html.Div([
-                dcc.Graph(figure = init_graph[0], id = 'graph3D'),
-                dcc.Graph(figure = init_graph[1], id = 'graph2D'),
-                dcc.Graph(figure = make_map_2(csv_data_tramos, 1, 0, 0), id = '_map'),
-                dbc.CardBody(
-                    [
-                        html.H6('DATOS unidades: utm 84-21s Wharton'),
-                        html.Div(id = 'tabla', children=[])
-                       
-                    ], id = 'Tabla')
-                ], id = 'Graficos'),
-
+                    dcc.Graph(figure = init_graph[0], id = 'graph3D'),
+                    # html.Div(id='current-camera-coordinates'),
+                    dcc.Graph(figure = init_graph[1], id = 'graph2D'),
+                    dcc.Graph(figure = make_map_2(csv_data_tramos, 1, 0, 0), id = '_map'),
+                    dbc.CardBody(
+                        [
+                            html.H6('DATOS unidades: utm 84-21s Wharton'),
+                            html.Div(id = 'tabla', children=[])
+                        
+                        ], id = 'Tabla')
+                    ], id = 'Graficos'),
+                
             ]
         ),
     ],
@@ -1448,7 +1402,9 @@ app.layout = html.Div([
 # ************************************************************************************************************************************************
 
 @app.callback(
-    [Output('graph3D', 'figure'),
+    [
+    Output('loading-output-1', 'children'),
+    Output('graph3D', 'figure'),
     Output('graph2D', 'figure'),
     Output('tabla', 'children'),
     Output('_map', 'figure'),
@@ -1514,7 +1470,7 @@ def update_figure(selected_ID, diametro_tunelera, profundidad_tunelera, dis_esqu
     )
 
     
-    return fig[0], fig[1], tabla_res, _map, None
+    return None, fig[0], fig[1], tabla_res, _map, None
 
 
 @app.callback(
