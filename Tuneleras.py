@@ -12,6 +12,7 @@ import math
 import numpy as np
 from flask import send_from_directory
 import pandas as pd
+import os
 
 
 external_stylesheets = [
@@ -370,7 +371,7 @@ def make_map_2(tramos_csv, id, dis_esq, ang_tun):
     fig = go.Figure(data = array_maps)
     fig.update_layout(
         mapbox = dict(
-            accesstoken='pk.eyJ1IjoibmFodWVsMDAwIiwiYSI6ImNsZW11MGQ2YjAweXUzcnIxaHp4MTF2NGgifQ.aLPRn5aR6GNJ3QDIKbhFeg',
+            accesstoken=os.getenv('MAPBOX_API_KEY'),
             style = 'light', 
             center = go.layout.mapbox.Center(
                 lat = center_lat/len_array_puntos,
