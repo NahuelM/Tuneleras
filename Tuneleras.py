@@ -595,6 +595,22 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
     r3 = y_redzone_1 - x3
     r4 = y_redzone_2 - x4
 
+    def recta_zampeado(X) -> float:
+        """recta que interpola los zampeados zarriba y zabajo
+
+        Args:
+            X (float): valor de X a evaluar en la recta
+
+        Returns:
+            float: devuelve el valor interpolado del zampeado en X
+        """
+ 
+        y2 = zarriba
+        y1 = zabajo
+        x2 = datos[0][6]
+        x1 = 0
+        pendiente = (y2 - y1) / (x2 - x1) 
+        return pendiente * X - (pendiente*x1) + y1
     ###################################    ######################################################################################################
     # FUNCION PARA CREAR CILINDROS 3D #    #RETORNA UNA MESH3D DEL CILINDRO Y DOS MATRICES CON LAS COORDS DE LAS CIRCUNFERENECIAS QUE LO FORMAN #
     ###################################    ######################################################################################################
@@ -1120,7 +1136,17 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
                   showarrow = False,
                   textangle = 0
             )
-                
+            fig.add_trace(go.Scatter(x = [dis_esquina, dis_esquina],
+                                     y = [recta_terreno(dis_esquina), profundidad_reltaiva + diametro_tunelera/2],
+                                     text=['', ''],
+                                     mode = 'lines',
+                                     dash = 'dot',
+                                     line = dict(color = 'black', width = 2)))
+            
+            fig.add_annotation(text = str(round(abs((profundidad_reltaiva + diametro_tunelera/2) - recta_terreno(dis_esquina)), 2))+'m',
+                            x = dis_esquina,
+                            y = (recta_terreno(dis_esquina)+(profundidad_reltaiva + diametro_tunelera/2))/2,
+                            textangle = 0)
                 
         min_y = np.min([y_redzone_1, y_redzone_2, y_redzone_12, y_redzone_22])
         line_offset = 1
@@ -1214,6 +1240,10 @@ def create_graph(id_tramo, diametro_tunelera, profundidad_tunelera, dis_esquina,
                   x=  xf + (lin_V_offset)*2 + 2, y = (cota_final[0][0] + y_dis_redZone_4)/2, showarrow=False,
                   textangle = -90
             )  
+            
+            fig.add_annotation(text = 'Zampeado: ' + str(round(recta_zampeado(dis_esquina), 2)),
+                x = dis_esquina,
+                y = recta_terreno(dis_esquina)-.15)
         #endregion
         fig.update_layout(scene_xaxis_visible = False, 
                           scene_yaxis_visible = False, 
